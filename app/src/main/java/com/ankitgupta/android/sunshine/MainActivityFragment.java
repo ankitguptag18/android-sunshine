@@ -15,6 +15,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -83,8 +84,18 @@ public class MainActivityFragment extends Fragment {
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textview,
                 new ArrayList<String>());
-        ListView lv = (ListView) rootView.findViewById(R.id.listview_forecast);
-        lv.setAdapter(weatherAdapter);
+        ListView forecastListView = (ListView) rootView.findViewById(R.id.listview_forecast);
+        forecastListView.setAdapter(weatherAdapter);
+        forecastListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast toast = Toast.makeText(
+                        getContext(),
+                        view.getContentDescription(),
+                        Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        });
 
         languageSpinner = (Spinner) rootView.findViewById(R.id.language_spinner);
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, languagesList);
@@ -262,8 +273,8 @@ public class MainActivityFragment extends Fragment {
         }
         private int getMaxTemp(JSONObject dayForecast) throws JSONException {
             JSONObject dayTemp = (JSONObject) dayForecast.get("temp");
-            Object maxtmp = dayTemp.get("max");
             int maxTemp = 0;
+            Object maxtmp = dayTemp.get("max");
             if (maxtmp instanceof Integer){
                 maxTemp = (int) maxtmp;
             } else if (maxtmp instanceof Double) {
@@ -274,7 +285,15 @@ public class MainActivityFragment extends Fragment {
 
         private int getMinTemp(JSONObject dayForecast) throws JSONException {
             JSONObject dayTemp = (JSONObject) dayForecast.get("temp");
-            return   ((Double) dayTemp.get("min")).intValue();
+
+            int minTemp = 0;
+            Object mintmp = dayTemp.get("max");
+            if (mintmp instanceof Integer){
+                minTemp = (int) mintmp;
+            } else if (mintmp instanceof Double) {
+                minTemp = ((Double) dayTemp.get("min")).intValue();
+            }
+            return  (minTemp) ;
         }
         private String getWeatherDesc(JSONObject dayForecast) throws JSONException {
             JSONArray dayTempArray = (JSONArray) dayForecast.get("weather");
