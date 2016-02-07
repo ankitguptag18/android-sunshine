@@ -11,8 +11,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Spinner;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,8 +28,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -38,9 +40,12 @@ import java.util.Map;
  */
 public class MainActivityFragment extends Fragment {
     private final String apiId = "44db6a862fba0b067b1930da0d769e98";
+    private final String defaultLanguage = "English";
+    Spinner languageSpinner;
     private final String className = this.getClass().getSimpleName();
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter<String> weatherAdapter;
     private OpenWeatherAPIParams openWeatherAPIParams;
+    private Map<String, String> languages;
     public MainActivityFragment() {
     }
 
@@ -54,19 +59,52 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        String[] weekForecastarray = {
-                "Today - Sunny - 88/63","Tomorrow - Sunny - 88/63"
-        };
-        List <String> weekForecast = new ArrayList<String>(
-                Arrays.asList(weekForecastarray)
-        );
-        adapter = new ArrayAdapter<String>(
+
+        languages = new HashMap<String, String>();
+        languages.put("English", "en");
+        languages.put("Russian", "ru");
+        languages.put("Italian", "it");
+        languages.put("Spanish", "es");
+        languages.put("Ukrainian", "uk");
+        languages.put("German", "de");
+        languages.put("Portuguese", "pt");
+        languages.put("Polish", "pl");
+        languages.put("Finnish", "fi");
+        languages.put("Dutch", "nl");
+        languages.put("French", "fr");
+        languages.put("Bulgarian", "bg");
+        languages.put("Swedish", "sv");
+        languages.put("Chinese Traditional", "zh_tw");
+        languages.put("Chinese Simplified", "zh_cn");
+        languages.put("Turkish", "tr");
+        languages.put("Croatian", "hr");
+        languages.put("Catalan", "ca");
+        List<String> languagesList = new ArrayList<String>();
+        languagesList.addAll(languages.keySet());
+        Collections.sort(languagesList, String.CASE_INSENSITIVE_ORDER);
+        weatherAdapter = new ArrayAdapter<String>(
                 getActivity(),
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textview,
-                weekForecast);
+                new ArrayList<String>());
         ListView lv = (ListView) rootView.findViewById(R.id.listview_forecast);
-        lv.setAdapter(adapter);
+        lv.setAdapter(weatherAdapter);
+
+        languageSpinner = (Spinner) rootView.findViewById(R.id.language_spinner);
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, languagesList);
+        languageSpinner.setAdapter(spinnerAdapter);
+        languageSpinner.setSelection(languagesList.indexOf(defaultLanguage));
+
+        languageSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+
+            public void onItemSelected(AdapterView<?> arg0, View view, int position, long id) {
+                String newLanguge = (String )languageSpinner.getSelectedItem();
+                updateWeather(languages.get(newLanguge));
+            }
+            public void onNothingSelected(AdapterView<?> arg0) {
+            }
+        });
+
         updateWeather();
         return rootView;
     }
@@ -85,27 +123,23 @@ public class MainActivityFragment extends Fragment {
         }
         return super.onOptionsItemSelected(item);
     }
-    private void updateWeather(){
+    private void updateWeather(String language){
         FetchWeatherTask weatherTask =  new FetchWeatherTask();
-        Map<String, String> map = new HashMap<String, String>();
         String postalCode = "560078,India";
         String mode = "json";
         String units = "metric";
-        String cnt = "14";
-        String lang = "en";
-
-
-        openWeatherAPIParams = new OpenWeatherAPIParams( apiId,postalCode,  mode,  units,  cnt,  lang);
-        map.put("apiId",apiId);
-        map.put("postalCode",postalCode);
-        map.put("mode",mode);
-        map.put("units",units);
-        map.put("cnt", cnt);
-        map.put("lang", lang);
+        String cnt = "7";
+        openWeatherAPIParams = new OpenWeatherAPIParams( apiId, postalCode,  mode,  units,  cnt,  language);
         weatherTask.execute(openWeatherAPIParams);
     }
 
+    private void updateWeather(){
+        String lang = languages.get(defaultLanguage);
+        updateWeather(lang);
+    }
+
     public class FetchWeatherTask extends AsyncTask{
+        private final String className = this.getClass().getSimpleName();
         @Override
         protected String[] doInBackground(Object[] params) {
            // Map<String, String> httpParams = (Map<String, String>) params[0];
@@ -124,21 +158,12 @@ public class MainActivityFragment extends Fragment {
             builder.scheme("http")
                     .authority("api.openweathermap.org")
                     .appendPath("data/2.5/forecast/daily")
-              /*
-                    .appendQueryParameter("q", httpParams.get("postalCode"))
-                    .appendQueryParameter("mode", httpParams.get("mode"))
-                    .appendQueryParameter("units", httpParams.get("units"))
-                    .appendQueryParameter("cnt", httpParams.get("cnt"))
-                    .appendQueryParameter("appid", httpParams.get("apiId"))
-                    .appendQueryParameter("lang", httpParams.get("lang"))
-*/
                     .appendQueryParameter("q", httpParams.getPostalCode())
                     .appendQueryParameter("mode", httpParams.getMode())
                     .appendQueryParameter("units", httpParams.getUnits())
                     .appendQueryParameter("cnt", httpParams.getCnt())
                     .appendQueryParameter("appid", httpParams.getApiId())
                     .appendQueryParameter("lang", httpParams.getLang())
-
             ;
             Uri uri = builder.build();
             String weatherAPI = uri.toString();
@@ -252,8 +277,8 @@ public class MainActivityFragment extends Fragment {
         @Override
         protected void onPostExecute(Object o) {
             String[] forcastlist = (String[]) o;
-            adapter.clear();
-            adapter.addAll(forcastlist);
+            weatherAdapter.clear();
+            weatherAdapter.addAll(forcastlist);
 
         }
 
