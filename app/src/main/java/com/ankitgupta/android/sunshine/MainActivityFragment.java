@@ -30,7 +30,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,15 +38,11 @@ import java.util.Map;
  * A placeholder fragment containing a simple view.
  */
 public class MainActivityFragment extends Fragment {
-    private final String apiId = "44db6a862fba0b067b1930da0d769e98";
     private final String defaultLanguage = "English";
-    Spinner languageSpinner;
+    private Spinner languageSpinner;
     private final String className = this.getClass().getSimpleName();
     private ArrayAdapter<String> weatherAdapter;
-    private OpenWeatherAPIParams openWeatherAPIParams;
     private Map<String, String> languages;
-    public MainActivityFragment() {
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -60,7 +55,7 @@ public class MainActivityFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        languages = new HashMap<String, String>();
+        languages = new HashMap<>();
         languages.put("English", "en");
         languages.put("Russian", "ru");
         languages.put("Italian", "it");
@@ -79,10 +74,11 @@ public class MainActivityFragment extends Fragment {
         languages.put("Turkish", "tr");
         languages.put("Croatian", "hr");
         languages.put("Catalan", "ca");
-        List<String> languagesList = new ArrayList<String>();
+
+        List<String> languagesList = new ArrayList<>();
         languagesList.addAll(languages.keySet());
         Collections.sort(languagesList, String.CASE_INSENSITIVE_ORDER);
-        weatherAdapter = new ArrayAdapter<String>(
+        weatherAdapter = new ArrayAdapter<>(
                 getActivity(),
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textview,
@@ -91,15 +87,15 @@ public class MainActivityFragment extends Fragment {
         lv.setAdapter(weatherAdapter);
 
         languageSpinner = (Spinner) rootView.findViewById(R.id.language_spinner);
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, languagesList);
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, languagesList);
         languageSpinner.setAdapter(spinnerAdapter);
         languageSpinner.setSelection(languagesList.indexOf(defaultLanguage));
 
         languageSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 
             public void onItemSelected(AdapterView<?> arg0, View view, int position, long id) {
-                String newLanguge = (String )languageSpinner.getSelectedItem();
-                updateWeather(languages.get(newLanguge));
+                String newLanguage = (String )languageSpinner.getSelectedItem();
+                updateWeather(languages.get(newLanguage));
             }
             public void onNothingSelected(AdapterView<?> arg0) {
             }
@@ -125,12 +121,12 @@ public class MainActivityFragment extends Fragment {
     }
     private void updateWeather(String language){
         FetchWeatherTask weatherTask =  new FetchWeatherTask();
+        final String apiId = "44db6a862fba0b067b1930da0d769e98";
         String postalCode = "560078,India";
         String mode = "json";
         String units = "metric";
         String cnt = "7";
-        openWeatherAPIParams = new OpenWeatherAPIParams( apiId, postalCode,  mode,  units,  cnt,  language);
-        weatherTask.execute(openWeatherAPIParams);
+        weatherTask.execute(new OpenWeatherAPIParams( apiId, postalCode,  mode,  units,  cnt,  language));
     }
 
     private void updateWeather(){
@@ -142,7 +138,6 @@ public class MainActivityFragment extends Fragment {
         private final String className = this.getClass().getSimpleName();
         @Override
         protected String[] doInBackground(Object[] params) {
-           // Map<String, String> httpParams = (Map<String, String>) params[0];
             OpenWeatherAPIParams httpParams = (OpenWeatherAPIParams) params[0];
             //Log.i(className, "Input Params Item Count " + httpParams.size());
 
@@ -167,10 +162,10 @@ public class MainActivityFragment extends Fragment {
             ;
             Uri uri = builder.build();
             String weatherAPI = uri.toString();
-            Log.v(className, "Featch weatherAPI from " + uri.toString());
+            Log.v(className, "Fetch weatherAPI from " + uri.toString());
             try {
                 // Construct the URL for the OpenWeatherMap query
-                // Possible parameters are avaiable at OWM's forecast API page, at
+                // Possible parameters are available at OWM's forecast API page, at
                 // http://openweathermap.org/API#forecast
                 URL url = new URL(weatherAPI);
 
@@ -203,7 +198,7 @@ public class MainActivityFragment extends Fragment {
                 forecastJsonStr = buffer.toString();
             } catch (IOException e) {
                 Log.e(this.getClass().getName(), "Error ", e);
-                // If the code didn't successfully get the weather data, there's no point in attemping
+                // If the code didn't successfully get the weather data, there's no point in attempting
                 // to parse it.
                 return null;
             } finally {
@@ -219,81 +214,72 @@ public class MainActivityFragment extends Fragment {
                 }
             }
             //Log.v(className, forecastJsonStr);
-            return getWeatherArrayFromJSON(forecastJsonStr,5);
+            return getWeatherArrayFromJSON(forecastJsonStr);
         }
-        private String[] getWeatherArrayFromJSON(String forecastJsonStr, int NbrDays){
-            ArrayList<String> weatherArray = new ArrayList<String>();
+
+        @Override
+        protected void onPostExecute(Object o) {
+            String[] forecastList = (String[]) o;
+            weatherAdapter.clear();
+            weatherAdapter.addAll(forecastList);
+        }
+
+        private String[] getWeatherArrayFromJSON(String forecastJsonStr){
+            ArrayList<String> weatherArray = new ArrayList<>();
             try {
                     JSONObject forecastJson = new JSONObject(forecastJsonStr);
                     JSONArray forecastList = forecastJson.getJSONArray("list");
-                    JSONObject dayForcast;
+                    JSONObject dayForecast;
                     for (int i=0;i<forecastList.length();i++){
-                        dayForcast = forecastList.getJSONObject(i);
-                        weatherArray.add(dayForcast(dayForcast,i));
+                        dayForecast = forecastList.getJSONObject(i);
+                        weatherArray.add(dayForecast(dayForecast, i));
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-
-            //for (String dayforcase: weatherArray)
-                //Log.v(className, dayforcase);
-                return (String[]) weatherArray.toArray(new String[weatherArray.size()]);
+                return weatherArray.toArray(new String[weatherArray.size()]);
         }
-        private String dayForcast(JSONObject dayForcast, int dayNbrFromToday)throws JSONException{
+        private String dayForecast(JSONObject dayForecast, int dayNbrFromToday)throws JSONException{
             //"Mon, Jun 1 - Clear - 18/13"
-            String dayforcastText = "";
-            if (dayNbrFromToday==0) {
-                dayforcastText += "Today : ";
+            String dayForecastText = "";
+            switch (dayNbrFromToday){
+                case 0:
+                    dayForecastText += "Today : ";
+                    break;
+                case 1:
+                    dayForecastText += "Tomorrow : ";
+                    break;
+                default:
+                    dayForecastText = getDate(dayNbrFromToday) + " : ";
             }
-            else if (dayNbrFromToday==1)
-                dayforcastText += "Tomorrow : ";
-            else
-            dayforcastText = getDate(dayNbrFromToday) + " : ";
-
-            dayforcastText += getWeatherDesc(dayForcast) + " - " + getMaxTemp(dayForcast) + "/" + getMinTemp(dayForcast);
-            return dayforcastText;
+            dayForecastText += getWeatherDesc(dayForecast) + " - " + getMaxTemp(dayForecast) + " / " + getMinTemp(dayForecast);
+            return dayForecastText;
         }
         private String getDate(int dayNbrFromToday){
             Calendar cal = Calendar.getInstance();
-            //cal.setTime( dateFormat.parse( inputString ) );
-            cal.add( Calendar.DATE, dayNbrFromToday );
-            Date date = cal.getTime();
-            SimpleDateFormat dt = new SimpleDateFormat("dd MMM yyyy");
-            return dt.format(date);
+            cal.add(Calendar.DATE, dayNbrFromToday);
+            return new SimpleDateFormat("dd MMM yyyy").format(cal.getTime());
         }
-        private int getMaxTemp(JSONObject dayForcast) throws JSONException {
-            JSONObject dayTemp = (JSONObject) dayForcast.get("temp");
+        private int getMaxTemp(JSONObject dayForecast) throws JSONException {
+            JSONObject dayTemp = (JSONObject) dayForecast.get("temp");
             Object maxtmp = dayTemp.get("max");
             int maxTemp = 0;
             if (maxtmp instanceof Integer){
                 maxTemp = (int) maxtmp;
             } else if (maxtmp instanceof Double) {
-                Double maxTempdouble = ((Double) dayTemp.get("max"));
-                maxTemp = maxTempdouble.intValue();
+                maxTemp = ((Double) dayTemp.get("max")).intValue();
             }
             return  (maxTemp) ;
         }
 
-        @Override
-        protected void onPostExecute(Object o) {
-            String[] forcastlist = (String[]) o;
-            weatherAdapter.clear();
-            weatherAdapter.addAll(forcastlist);
-
+        private int getMinTemp(JSONObject dayForecast) throws JSONException {
+            JSONObject dayTemp = (JSONObject) dayForecast.get("temp");
+            return   ((Double) dayTemp.get("min")).intValue();
         }
-
-        private double getMinTemp(JSONObject dayForcast) throws JSONException {
-            JSONObject dayTemp = (JSONObject) dayForcast.get("temp");
-            return  (double) dayTemp.get("min");
-        }
-        private String getWeatherDesc(JSONObject dayForcast) throws JSONException {
-            JSONArray dayTemp = (JSONArray) dayForcast.get("weather");
-            JSONObject daytmp =(JSONObject) dayTemp.get(0);
-            return (String) daytmp.get("description");
-        }
-        private String getDate(JSONObject dayForcast) throws JSONException {
-            JSONObject dayTemp = (JSONObject) dayForcast.get("weather");
-            return (String) dayTemp.get("main");
+        private String getWeatherDesc(JSONObject dayForecast) throws JSONException {
+            JSONArray dayTempArray = (JSONArray) dayForecast.get("weather");
+            JSONObject dayTemp =(JSONObject) dayTempArray.get(0);
+            return (String) dayTemp.get("description");
         }
     }
 
