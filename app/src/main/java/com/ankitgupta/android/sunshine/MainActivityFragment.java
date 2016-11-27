@@ -16,6 +16,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
 
+import com.ankitgupta.android.sunshine.model.OpenWeatherAPIParams;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,7 +41,7 @@ import java.util.Map;
  * A placeholder fragment containing a simple view.
  */
 public class MainActivityFragment extends Fragment {
-    private final String apiId = "44db6a862fba0b067b1930da0d769e98";
+    private final String apiId = "ea574594b9d36ab688642d5fbeab847e";
     private final String defaultLanguage = "English";
     Spinner languageSpinner;
     private final String className = this.getClass().getSimpleName();
@@ -79,6 +81,7 @@ public class MainActivityFragment extends Fragment {
         languages.put("Turkish", "tr");
         languages.put("Croatian", "hr");
         languages.put("Catalan", "ca");
+
         List<String> languagesList = new ArrayList<String>();
         languagesList.addAll(languages.keySet());
         Collections.sort(languagesList, String.CASE_INSENSITIVE_ORDER);
@@ -129,7 +132,12 @@ public class MainActivityFragment extends Fragment {
         String mode = "json";
         String units = "metric";
         String cnt = "7";
-        openWeatherAPIParams = new OpenWeatherAPIParams( apiId, postalCode,  mode,  units,  cnt,  language);
+//        openWeatherAPIParams = new OpenWeatherAPIParams( apiId, postalCode,  mode,  units,  cnt,  language);
+        openWeatherAPIParams = new OpenWeatherAPIParams( apiId, postalCode);
+        openWeatherAPIParams.setMode(mode);
+        openWeatherAPIParams.setUnits(units);
+        openWeatherAPIParams.setCnt(cnt);
+        openWeatherAPIParams.setLang(language);
         weatherTask.execute(openWeatherAPIParams);
     }
 
@@ -144,7 +152,7 @@ public class MainActivityFragment extends Fragment {
         protected String[] doInBackground(Object[] params) {
            // Map<String, String> httpParams = (Map<String, String>) params[0];
             OpenWeatherAPIParams httpParams = (OpenWeatherAPIParams) params[0];
-            //Log.i(className, "Input Params Item Count " + httpParams.size());
+
 
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
@@ -167,7 +175,7 @@ public class MainActivityFragment extends Fragment {
             ;
             Uri uri = builder.build();
             String weatherAPI = uri.toString();
-            Log.v(className, "Featch weatherAPI from " + uri.toString());
+            Log.d(className, "Fetch weatherAPI from " + uri.toString());
             try {
                 // Construct the URL for the OpenWeatherMap query
                 // Possible parameters are avaiable at OWM's forecast API page, at
@@ -218,7 +226,6 @@ public class MainActivityFragment extends Fragment {
                     }
                 }
             }
-            //Log.v(className, forecastJsonStr);
             return getWeatherArrayFromJSON(forecastJsonStr,5);
         }
         private String[] getWeatherArrayFromJSON(String forecastJsonStr, int NbrDays){
@@ -234,9 +241,6 @@ public class MainActivityFragment extends Fragment {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-
-            //for (String dayforcase: weatherArray)
-                //Log.v(className, dayforcase);
                 return (String[]) weatherArray.toArray(new String[weatherArray.size()]);
         }
         private String dayForcast(JSONObject dayForcast, int dayNbrFromToday)throws JSONException{
@@ -296,72 +300,4 @@ public class MainActivityFragment extends Fragment {
             return (String) dayTemp.get("main");
         }
     }
-
-    class OpenWeatherAPIParams{
-
-        String apiId;
-        String postalCode;
-        String mode;
-        String units;
-        String cnt;
-        String lang;
-
-        public OpenWeatherAPIParams(String apiId, String postalCode, String mode, String units, String cnt, String lang) {
-            this.apiId = apiId;
-            this.postalCode = postalCode;
-            this.mode = mode;
-            this.units = units;
-            this.cnt = cnt;
-            this.lang = lang;
-        }
-
-        public String getApiId() {
-            return apiId;
-        }
-
-        public void setApiId(String apiId) {
-            this.apiId = apiId;
-        }
-
-        public String getPostalCode() {
-            return postalCode;
-        }
-
-        public void setPostalCode(String postalCode) {
-            this.postalCode = postalCode;
-        }
-
-        public String getMode() {
-            return mode;
-        }
-
-        public void setMode(String mode) {
-            this.mode = mode;
-        }
-
-        public String getUnits() {
-            return units;
-        }
-
-        public void setUnits(String units) {
-            this.units = units;
-        }
-
-        public String getCnt() {
-            return cnt;
-        }
-
-        public void setCnt(String cnt) {
-            this.cnt = cnt;
-        }
-
-        public String getLang() {
-            return lang;
-        }
-
-        public void setLang(String lang) {
-            this.lang = lang;
-        }
-    }
-
 }
