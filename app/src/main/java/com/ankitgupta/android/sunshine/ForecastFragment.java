@@ -40,7 +40,7 @@ import java.util.Map;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class ForecastFragment extends Fragment {
     private final String apiId = "ea574594b9d36ab688642d5fbeab847e";
     private final String defaultLanguage = "English";
     Spinner languageSpinner;
@@ -48,7 +48,7 @@ public class MainActivityFragment extends Fragment {
     private ArrayAdapter<String> weatherAdapter;
     private OpenWeatherAPIParams openWeatherAPIParams;
     private Map<String, String> languages;
-    public MainActivityFragment() {
+    public ForecastFragment() {
     }
 
     @Override
