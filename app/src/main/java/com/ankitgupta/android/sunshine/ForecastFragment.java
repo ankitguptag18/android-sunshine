@@ -1,5 +1,6 @@
 package com.ankitgupta.android.sunshine;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.ankitgupta.android.sunshine.model.OpenWeatherAPIParams;
 
@@ -92,7 +94,15 @@ public class ForecastFragment extends Fragment {
                 new ArrayList<String>());
         ListView lv = (ListView) rootView.findViewById(R.id.listview_forecast);
         lv.setAdapter(weatherAdapter);
-
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                CharSequence text = "Button Clicked";
+                int duration = Toast.LENGTH_SHORT;
+                Toast toast = Toast.makeText(getActivity(), text, duration);
+                toast.show();
+            }
+        });
         languageSpinner = (Spinner) rootView.findViewById(R.id.language_spinner);
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_spinner_item, languagesList);
         languageSpinner.setAdapter(spinnerAdapter);
