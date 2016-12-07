@@ -138,7 +138,23 @@ public class ForecastFragment extends Fragment {
         openWeatherAPIParams.setUnits(units);
         openWeatherAPIParams.setCnt(cnt);
         openWeatherAPIParams.setLang(language);
-        weatherTask.execute(openWeatherAPIParams);
+
+        final String PARAM_QUERY = "q";
+        final String PARAM_MODE = "mode";
+        final String PARAM_UNITS = "units";
+        final String PARAM_COUNT = "cnt";
+        final String PARAM_APPID = "appid";
+        final String PARAM_LANGUAGE = "lang";
+
+        Map<String, String> params = new HashMap<String, String>();
+        params.put(PARAM_QUERY,postalCode);
+        params.put(PARAM_MODE,mode);
+        params.put(PARAM_UNITS,units);
+        params.put(PARAM_COUNT,cnt);
+        params.put(PARAM_APPID,apiId);
+        params.put(PARAM_LANGUAGE,language);
+
+        weatherTask.execute(params);
     }
 
     private void updateWeather(){
@@ -150,9 +166,8 @@ public class ForecastFragment extends Fragment {
         private final String className = this.getClass().getSimpleName();
         @Override
         protected String[] doInBackground(Object[] params) {
-           // Map<String, String> httpParams = (Map<String, String>) params[0];
-            OpenWeatherAPIParams httpParams = (OpenWeatherAPIParams) params[0];
-
+            Map<String, String> httpParams = (Map<String, String>) params[0];
+//            OpenWeatherAPIParams httpParams = (OpenWeatherAPIParams) params[0];
 
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
@@ -162,17 +177,18 @@ public class ForecastFragment extends Fragment {
             // Will contain the raw JSON response as a string.
             String forecastJsonStr = null;
 
+            final String FORECAST_DOMAIN = "api.openweathermap.org";
+            final String FORECAST_PATH = "data/2.5/forecast/daily";
+
             Uri.Builder builder = new Uri.Builder();
             builder.scheme("http")
-                    .authority("api.openweathermap.org")
-                    .appendPath("data/2.5/forecast/daily")
-                    .appendQueryParameter("q", httpParams.getPostalCode())
-                    .appendQueryParameter("mode", httpParams.getMode())
-                    .appendQueryParameter("units", httpParams.getUnits())
-                    .appendQueryParameter("cnt", httpParams.getCnt())
-                    .appendQueryParameter("appid", httpParams.getApiId())
-                    .appendQueryParameter("lang", httpParams.getLang())
+                    .authority(FORECAST_DOMAIN)
+                    .appendPath(FORECAST_PATH)
             ;
+            for (String key : httpParams.keySet()){
+                builder.appendQueryParameter(key,httpParams.get(key));
+            }
+
             Uri uri = builder.build();
             String weatherAPI = uri.toString();
             Log.d(className, "Fetch weatherAPI from " + uri.toString());
@@ -228,20 +244,29 @@ public class ForecastFragment extends Fragment {
             }
             return getWeatherArrayFromJSON(forecastJsonStr,5);
         }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            String[] forcastlist = (String[]) o;
+            weatherAdapter.clear();
+            weatherAdapter.addAll(forcastlist);
+
+        }
+
         private String[] getWeatherArrayFromJSON(String forecastJsonStr, int NbrDays){
             ArrayList<String> weatherArray = new ArrayList<String>();
             try {
-                    JSONObject forecastJson = new JSONObject(forecastJsonStr);
-                    JSONArray forecastList = forecastJson.getJSONArray("list");
-                    JSONObject dayForcast;
-                    for (int i=0;i<forecastList.length();i++){
-                        dayForcast = forecastList.getJSONObject(i);
-                        weatherArray.add(dayForcast(dayForcast,i));
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
+                JSONObject forecastJson = new JSONObject(forecastJsonStr);
+                JSONArray forecastList = forecastJson.getJSONArray("list");
+                JSONObject dayForcast;
+                for (int i=0;i<forecastList.length();i++){
+                    dayForcast = forecastList.getJSONObject(i);
+                    weatherArray.add(dayForcast(dayForcast,i));
                 }
-                return (String[]) weatherArray.toArray(new String[weatherArray.size()]);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return (String[]) weatherArray.toArray(new String[weatherArray.size()]);
         }
         private String dayForcast(JSONObject dayForcast, int dayNbrFromToday)throws JSONException{
             //"Mon, Jun 1 - Clear - 18/13"
@@ -252,19 +277,21 @@ public class ForecastFragment extends Fragment {
             else if (dayNbrFromToday==1)
                 dayforcastText += "Tomorrow : ";
             else
-            dayforcastText = getDate(dayNbrFromToday) + " : ";
+                dayforcastText = getDate(dayNbrFromToday) + " : ";
 
             dayforcastText += getWeatherDesc(dayForcast) + " - " + getMaxTemp(dayForcast) + "/" + getMinTemp(dayForcast);
             return dayforcastText;
         }
+
         private String getDate(int dayNbrFromToday){
             Calendar cal = Calendar.getInstance();
             //cal.setTime( dateFormat.parse( inputString ) );
             cal.add( Calendar.DATE, dayNbrFromToday );
             Date date = cal.getTime();
-            SimpleDateFormat dt = new SimpleDateFormat("dd MMM yyyy");
+            SimpleDateFormat dt = new SimpleDateFormat("EEE, dd MMM yyyy");
             return dt.format(date);
         }
+
         private int getMaxTemp(JSONObject dayForcast) throws JSONException {
             JSONObject dayTemp = (JSONObject) dayForcast.get("temp");
             Object maxtmp = dayTemp.get("max");
@@ -276,14 +303,6 @@ public class ForecastFragment extends Fragment {
                 maxTemp = maxTempdouble.intValue();
             }
             return  (maxTemp) ;
-        }
-
-        @Override
-        protected void onPostExecute(Object o) {
-            String[] forcastlist = (String[]) o;
-            weatherAdapter.clear();
-            weatherAdapter.addAll(forcastlist);
-
         }
 
         private double getMinTemp(JSONObject dayForcast) throws JSONException {
